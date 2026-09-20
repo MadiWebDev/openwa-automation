@@ -100,7 +100,7 @@ export default function SessionsView({ onSessionChange }: { onSessionChange: (id
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sessions.map(s => {
+          {sessions &&  sessions?.map(s => {
             const isReady = s.status === 'ready' || s.status === 'connected'
             const isLoading = actionLoading === s.id
             return (

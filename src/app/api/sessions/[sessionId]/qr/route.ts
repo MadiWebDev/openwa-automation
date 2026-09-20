@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { openwa } from '@/lib/openwa'
 
-export async function GET(_: Request, { params }: { params: { sessionId: string } }) {
+export async function GET(_: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   try {
-    const data = await openwa(`/api/sessions/${encodeURIComponent(params.sessionId)}/qr`)
+    const { sessionId } = await params
+    const data = await openwa(`/api/sessions/${encodeURIComponent(sessionId)}/qr`)
     return NextResponse.json(data)
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: error.status || 400 })
+    return NextResponse.json({ error: error.message }, { status: error.status || 500 })
   }
 }

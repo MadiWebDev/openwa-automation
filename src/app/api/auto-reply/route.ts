@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { ObjectId } from 'mongodb'
 import { collection } from '@/lib/mongodb'
 import { z } from 'zod'
 
@@ -15,6 +14,13 @@ const RuleSchema = z.object({
   aiInstructions: z.string().optional(),
   isActive: z.boolean().default(true),
   priority: z.number().int().min(0).default(10),
+}).superRefine((data, ctx) => {
+  if (data.responseType === 'fixed' && !data.fixedResponse) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'fixedResponse is required when responseType is fixed', path: ['fixedResponse'] })
+  }
+  if (data.responseType === 'template' && !data.templateId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'templateId is required when responseType is template', path: ['templateId'] })
+  }
 })
 
 export async function GET(request: Request) {

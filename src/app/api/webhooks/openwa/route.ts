@@ -128,9 +128,11 @@ export async function POST(request: Request) {
         if (orders.length > 0) {
           const latestOrder = orders[0]
           const statusMsg = formatOrderStatus(latestOrder)
-          await sendDirectMessage(sessionId, phone, statusMsg, 'auto_reply')
-          await logAudit('auto_reply.order_status', eventType, eventId, phone, sessionId)
-          return NextResponse.json({ ok: true, eventId, action: 'order_status_sent' })
+          const { sendFailed } = await sendDirectMessage(sessionId, phone, statusMsg, 'auto_reply')
+          if (!sendFailed) {
+            await logAudit('auto_reply.order_status', eventType, eventId, phone, sessionId)
+            return NextResponse.json({ ok: true, eventId, action: 'order_status_sent' })
+          }
         }
       }
 
@@ -139,11 +141,13 @@ export async function POST(request: Request) {
         try {
           const result = await processInboundMessage(text, phone, sessionId)
           if (result) {
-            await sendDirectMessage(sessionId, phone, result.reply, 'auto_reply', result.ruleId)
-            await logAudit('auto_reply.sent', eventType, eventId, phone, sessionId, {
-              source: result.source, ruleId: result.ruleId,
-            })
-            return NextResponse.json({ ok: true, eventId, action: 'auto_reply_sent', source: result.source })
+            const { sendFailed } = await sendDirectMessage(sessionId, phone, result.reply, 'auto_reply', result.ruleId)
+            if (!sendFailed) {
+              await logAudit('auto_reply.sent', eventType, eventId, phone, sessionId, {
+                source: result.source, ruleId: result.ruleId,
+              })
+              return NextResponse.json({ ok: true, eventId, action: 'auto_reply_sent', source: result.source })
+            }
           }
         } catch (aiErr: any) {
           console.error('Auto-reply processing error:', aiErr.message)

@@ -63,9 +63,11 @@ export default function Dashboard() {
   useEffect(() => {
     fetch('/api/sessions')
       .then(r => r.json())
-      .then((d: any[]) => {
-        setSessions(d)
-        if (d.length > 0 && !sessionId) setSessionId(d[0].id || d[0].name || '')
+      .then((d: any) => {
+        // API may return an array directly, or wrap it in a property
+        const list: any[] = Array.isArray(d) ? d : Array.isArray(d?.sessions) ? d.sessions : []
+        setSessions(list)
+        if (list.length > 0 && !sessionId) setSessionId(list[0].id || list[0].name || '')
       })
       .catch(() => setSessions([]))
 
@@ -116,7 +118,7 @@ export default function Dashboard() {
               onChange={e => setSessionId(e.target.value)}
             >
               <option value="">— Select session —</option>
-              {sessions.map(s => (
+              {sessions && sessions?.map(s => (
                 <option key={s.id || s.name} value={s.id || s.name}>{s.name || s.id}</option>
               ))}
             </select>

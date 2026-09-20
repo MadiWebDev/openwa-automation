@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { openwa } from '@/lib/openwa'
 
-export async function POST(_: Request, { params }: { params: { sessionId: string } }) {
+export async function POST(_: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   try {
-    const data = await openwa(`/api/sessions/${encodeURIComponent(params.sessionId)}/stop`, { method: 'POST', body: JSON.stringify({}) })
+    const { sessionId } = await params
+    const data = await openwa(`/api/sessions/${encodeURIComponent(sessionId)}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
     return NextResponse.json(data)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })

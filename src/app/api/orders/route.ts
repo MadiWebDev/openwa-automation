@@ -20,6 +20,17 @@ const OrderSchema = z.object({
   conversationId: z.string().optional(),
 })
 
+function safeInt(value: string | null, fallback: number): number {
+  const n = parseInt(value || '')
+  return isNaN(n) || n < 0 ? fallback : n
+}
+
+function safeDate(value: string | null): Date | undefined {
+  if (!value) return undefined
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? undefined : d
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -27,10 +38,10 @@ export async function GET(request: Request) {
       status: (searchParams.get('status') as any) || undefined,
       phone: searchParams.get('phone') || undefined,
       sessionId: searchParams.get('sessionId') || undefined,
-      limit: parseInt(searchParams.get('limit') || '50'),
-      offset: parseInt(searchParams.get('offset') || '0'),
-      from: searchParams.get('from') ? new Date(searchParams.get('from')!) : undefined,
-      to: searchParams.get('to') ? new Date(searchParams.get('to')!) : undefined,
+      limit: safeInt(searchParams.get('limit'), 50),
+      offset: safeInt(searchParams.get('offset'), 0),
+      from: safeDate(searchParams.get('from')),
+      to: safeDate(searchParams.get('to')),
     })
     return NextResponse.json(result)
   } catch (error: any) {

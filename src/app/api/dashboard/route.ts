@@ -7,7 +7,6 @@ export async function GET(request: Request) {
     const sessionId = searchParams.get('sessionId')
 
     const matchSession = sessionId ? { sessionId } : {}
-    const matchSessionOrAll = sessionId ? { sessionId } : {}
 
     const [
       totalContacts,
@@ -33,12 +32,12 @@ export async function GET(request: Request) {
       (await collection('orders')).countDocuments(matchSession),
       (await collection('orders')).countDocuments({ ...matchSession, status: 'pending' }),
       (await collection('orders')).countDocuments({ ...matchSession, status: { $in: ['confirmed', 'processing'] } }),
-      (await collection('messages')).countDocuments(matchSessionOrAll),
+      (await collection('messages')).countDocuments(matchSession),
       (await collection('conversations')).countDocuments(matchSession),
       (await collection('conversations')).countDocuments({ ...matchSession, status: 'open' }),
       (await collection('autoReplies')).countDocuments({ ...matchSession, isActive: true }),
       (await collection<any>('orders')).find(matchSession).sort({ createdAt: -1 }).limit(5).toArray(),
-      (await collection<any>('messages')).find({ ...matchSessionOrAll, direction: 'inbound' }).sort({ createdAt: -1 }).limit(10).toArray(),
+      (await collection<any>('messages')).find({ ...matchSession, direction: 'inbound' }).sort({ createdAt: -1 }).limit(10).toArray(),
       (await collection<any>('campaigns')).find(matchSession).sort({ createdAt: -1 }).limit(5).toArray(),
       (await collection<any>('orders')).aggregate([
         { $match: matchSession },
