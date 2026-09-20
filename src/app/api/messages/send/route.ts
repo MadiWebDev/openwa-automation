@@ -42,17 +42,21 @@ export async function POST(request: Request) {
       }
     }
 
-    const { openwaMessageId, messageRecord, sendFailed } = await sendDirectMessage(
+    const { openwaMessageId, messageRecord, sendFailed, sendError } = await sendDirectMessage(
       parsed.data.sessionId,
       parsed.data.phone,
       text,
       'manual'
     )
 
-    return NextResponse.json(
-      { ok: !sendFailed, openwaMessageId, messageId: messageRecord._id, ...(sendFailed && { warning: 'Message logged but WhatsApp delivery failed' }) },
-      { status: 201 }
-    )
+    if (sendFailed) {
+      return NextResponse.json(
+        { error: sendError || 'WhatsApp delivery failed. Check session status and OpenWA connectivity.', messageId: messageRecord._id },
+        { status: 502 }
+      )
+    }
+
+    return NextResponse.json({ ok: true, openwaMessageId, messageId: messageRecord._id }, { status: 201 })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

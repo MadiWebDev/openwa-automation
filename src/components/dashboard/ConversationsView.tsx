@@ -42,6 +42,7 @@ export default function ConversationsView({ sessionId }: { sessionId: string }) 
   const [search, setSearch] = useState('')
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const loadConversations = useCallback(async () => {
@@ -75,16 +76,24 @@ export default function ConversationsView({ sessionId }: { sessionId: string }) 
   const sendReply = async () => {
     if (!reply.trim() || !selected) return
     setSending(true)
+    setSendError('')
     try {
-      await fetch('/api/messages/send', {
+      const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ sessionId: selected.sessionId, phone: selected.phone, text: reply }),
       })
-      setReply('')
-      await loadMessages(selected)
-      await loadConversations()
-    } catch {}
+      const data = await res.json()
+      if (res.ok) {
+        setReply('')
+        await loadMessages(selected)
+        await loadConversations()
+      } else {
+        setSendError(data.error || `Send failed (${res.status})`)
+      }
+    } catch (e: any) {
+      setSendError(e.message || 'Network error')
+    }
     setSending(false)
   }
 
@@ -196,6 +205,11 @@ export default function ConversationsView({ sessionId }: { sessionId: string }) 
 
             {/* Reply box */}
             <div className="p-4 border-t border-[#1e2d45]">
+              {sendError && (
+                <div className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2 mb-2 border border-red-500/20">
+                  ⚠ {sendError}
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <textarea
                   className="textarea flex-1 resize-none py-2.5 min-h-[42px] max-h-32"

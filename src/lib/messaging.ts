@@ -69,6 +69,7 @@ async function updateConversation(
  *
  * Returns `sendFailed: true` when the OpenWA send did not succeed so callers
  * can take appropriate action (e.g. skip audit logging of a "sent" event).
+ * Also surfaces `sendError` with the underlying error message for API callers.
  */
 export async function sendDirectMessage(
   sessionId: string,
@@ -76,9 +77,10 @@ export async function sendDirectMessage(
   text: string,
   source: MessageRecord['source'] = 'manual',
   autoReplyRuleId?: string
-): Promise<{ openwaMessageId: string | null; messageRecord: MessageRecord; sendFailed: boolean }> {
+): Promise<{ openwaMessageId: string | null; messageRecord: MessageRecord; sendFailed: boolean; sendError?: string }> {
   let openwaMessageId: string | null = null
   let sendFailed = false
+  let sendError: string | undefined
 
   try {
     const response: any = await openwa(
@@ -87,10 +89,14 @@ export async function sendDirectMessage(
     )
     openwaMessageId = response?.id || response?.messageId || response?.message?.id || null
     // If we got a response but no message ID, treat it as a send failure
-    if (!openwaMessageId) sendFailed = true
+    if (!openwaMessageId) {
+      sendFailed = true
+      sendError = 'OpenWA returned no message ID — the session may be disconnected'
+    }
   } catch (err: any) {
     console.error('sendDirectMessage error:', err.message)
     sendFailed = true
+    sendError = err.message
   }
 
   const messageRecord = await logMessage({
@@ -104,7 +110,7 @@ export async function sendDirectMessage(
     autoReplyRuleId,
   })
 
-  return { openwaMessageId, messageRecord, sendFailed }
+  return { openwaMessageId, messageRecord, sendFailed, sendError }
 }
 
 /** Get message history for a conversation */

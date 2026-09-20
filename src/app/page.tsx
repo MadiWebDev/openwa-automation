@@ -219,17 +219,29 @@ function QuickSendButton({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
   const send = async () => {
     if (!phone || !text || !sessionId) return
     setSending(true)
+    setError('')
     try {
       const res = await fetch('/api/messages/send', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ sessionId, phone, text }),
       })
-      if (res.ok) { setSent(true); setPhone(''); setText(''); setTimeout(() => { setSent(false); setOpen(false) }, 1500) }
-    } catch {}
+      const data = await res.json()
+      if (res.ok) {
+        setSent(true)
+        setPhone('')
+        setText('')
+        setTimeout(() => { setSent(false); setOpen(false) }, 1500)
+      } else {
+        setError(data.error || `Send failed (${res.status})`)
+      }
+    } catch (e: any) {
+      setError(e.message || 'Network error')
+    }
     setSending(false)
   }
 
@@ -255,6 +267,11 @@ function QuickSendButton({ sessionId }: { sessionId: string }) {
                 </div>
               ) : (
                 <>
+                  {error && (
+                    <div className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2 border border-red-500/20">
+                      ⚠ {error}
+                    </div>
+                  )}
                   <div>
                     <label className="label">To (Phone)</label>
                     <input className="input" placeholder="1234567890@c.us" value={phone} onChange={e => setPhone(e.target.value)} />
